@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -49,6 +50,8 @@ public class MapsActivity extends FragmentActivity implements
     private Button btnInicio;
     private Button btnFinal;
     private Handler h = new Handler();
+    private Runnable test;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,9 +121,17 @@ public class MapsActivity extends FragmentActivity implements
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                latitud = location.getLatitude();
-                longitud = location.getLongitude();
-                marca = new LatLng(latitud,longitud);
+                if(location != null){
+                    latitud = location.getLatitude();
+                    longitud = location.getLongitude();
+                    marca = new LatLng(latitud,longitud);
+                }
+                else{
+                    Toast t=Toast.makeText(getApplicationContext(),"No se puedo obtener la localización en este momento",
+                            Toast.LENGTH_LONG);
+                    t.show();
+                    marca = new LatLng(0,0);
+                }
             }
 
             @Override
@@ -163,7 +174,6 @@ public class MapsActivity extends FragmentActivity implements
         if(machete == 0){
             markerActual.remove();
             markerActual =  mMap.addMarker(setMarkerIniFin(marca, "Inicio","Carrera Los pegados"));
-            mMap.moveCamera(CameraUpdateFactory.zoomBy(15));
             mMap.moveCamera(CameraUpdateFactory.newLatLng(marca));
             machete++;
         }
@@ -185,15 +195,6 @@ public class MapsActivity extends FragmentActivity implements
         markerAnterior = markerActual;
     }
 
-    public Runnable mMyRunnableHide = new Runnable()
-    {
-        public void run()
-        {
-            trazarCamino();
-        }
-    };
-
-
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -201,6 +202,7 @@ public class MapsActivity extends FragmentActivity implements
 
         mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
         markerActual = mMap.addMarker(setMarkerIniFin(marca, "Inicio", "Carrera Los pegados"));
+        mMap.moveCamera(CameraUpdateFactory.zoomBy(15));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(marca));
         //mMap.setMyLocationEnabled(true);
 
@@ -211,10 +213,18 @@ public class MapsActivity extends FragmentActivity implements
     public void onClick(View v){
         switch (v.getId()){
             case R.id.btnInicio:
-                h.postDelayed(mMyRunnableHide, 30000);
+                final int delay = 30000; //milliseconds
+                test=new Runnable() {
+                    public void run() {
+                        trazarCamino();
+                        h.postDelayed(this, delay);
+                    }
+                };
+                h.postDelayed(test, delay);
+
                 break;
             case R.id.btnFinal:
-                h.removeCallbacks(mMyRunnableHide);
+                h.removeCallbacks(test);
                 break;
             default:
                 break;
